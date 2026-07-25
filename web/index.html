@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>臺中市 115 學校午餐智慧管理系統 (Demo)</title>
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js 3.x -->
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- ECharts 5.x -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <!-- Mermaid.js 10.x -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950" x-data="appData()" x-init="initCharts()">
+
+  <!-- 頂部導航欄 -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🍱</span>
+        <div>
+          <h1 class="font-bold text-lg text-white">臺中市神岡區豐洲國小 - 學校午餐智慧管理系統</h1>
+          <p class="text-xs text-slate-400">對接 115 免費午餐 60 元補助 x 2026/07/01 採購新制 (Go Core Powered)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+          Go 核心運轉中 (< 20MB)
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- 4 大核心 KPI 指標卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="text-slate-400 text-sm font-medium">今日全校總備餐數</div>
+        <div class="mt-2 text-3xl font-extrabold text-white flex items-baseline justify-between">
+          <span>850 <span class="text-xs font-normal text-slate-400">份</span></span>
+          <span class="text-xs text-emerald-400 font-semibold">100% 供應</span>
+        </div>
+      </div>
+      <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="text-slate-400 text-sm font-medium">今日請假停餐人數</div>
+        <div class="mt-2 text-3xl font-extrabold text-amber-400 flex items-baseline justify-between">
+          <span x-text="cancellationCount + ' 人'">12 人</span>
+          <span class="text-xs text-amber-400/80 font-normal">已扣除份數</span>
+        </div>
+      </div>
+      <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="text-slate-400 text-sm font-medium">本學期 60元補助額度</div>
+        <div class="mt-2 text-3xl font-extrabold text-sky-400 flex items-baseline justify-between">
+          <span>$296,010</span>
+          <span class="text-xs text-sky-400/80 font-normal">第一學期核定</span>
+        </div>
+      </div>
+      <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="text-slate-400 text-sm font-medium">主副食支出佔比 (70% 規範)</div>
+        <div class="mt-2 text-3xl font-extrabold text-emerald-400 flex items-baseline justify-between">
+          <span>73.5 %</span>
+          <span class="text-xs text-emerald-400 font-medium">🟢 符合規定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 視覺化控制面板與 ECharts 圖表區 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- 圖表 1: 主副食 70% 支出比例儀表圖 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-base font-semibold text-white mb-2 flex items-center gap-2">
+          🎯 主副食 70% 支出比例監控 (ECharts)
+        </h2>
+        <p class="text-xs text-slate-400 mb-4">教育局規範：主副食支出佔比不得低於 70%</p>
+        <div id="ratioGaugeChart" class="h-64 w-full"></div>
+      </div>
+
+      <!-- 圖表 2: 115 補助款月度趨勢與金額分析 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2">
+        <h2 class="text-base font-semibold text-white mb-2 flex items-center gap-2">
+          📊 115 免費午餐 60 元補助月度支用趨勢
+        </h2>
+        <p class="text-xs text-slate-400 mb-4">實時比較計畫核定金額 (A) 與實際支出金額 (D)</p>
+        <div id="subsidyBarChart" class="h-64 w-full"></div>
+      </div>
+    </div>
+
+    <!-- 雙端功能展示區 (前台請假 + 官方 Excel / 公文導出) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+      <!-- 📱 導師/教職員手機極速請假 Demo -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            📱 導師/教職員極速請假體驗 (前 3 工作日 12:00 PM 截點檢核)
+          </h2>
+          <span class="text-xs text-slate-400">模擬 LINE LIFF</span>
+        </div>
+
+        <form @submit.prevent="submitCancellation()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">請假對象與班級</label>
+            <input type="text" x-model="form.target_name" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500" placeholder="例如：林小明 (三年二班)">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">對象身份</label>
+              <select x-model="form.target_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                <option value="student">學生 (無須個人退費，僅扣份數)</option>
+                <option value="staff">教職員 (自費按日/按月退費扣抵)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">欲停餐日期</label>
+              <input type="date" x-model="form.cancel_date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">請假原因</label>
+            <input type="text" x-model="form.reason" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" placeholder="個人病假 / 事假">
+          </div>
+
+          <button type="submit" :disabled="loading" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+            <span x-show="!loading">🚀 送出請假申請 (發動 Go Core 檢核)</span>
+            <span x-show="loading">⌛ 檢核中...</span>
+          </button>
+        </form>
+
+        <!-- 請假結果與動態 Mermaid 截點流程圖 -->
+        <div x-show="result" x-transition class="mt-4 p-4 bg-slate-800/80 border border-slate-700 rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-400">審核結果狀態</span>
+            <span class="px-2 py-0.5 rounded text-xs font-bold" :class="result?.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'" x-text="result?.status === 'approved' ? 'APPROVED (符合截點)' : 'NO_REFUND (逾時請假)'"></span>
+          </div>
+          <p class="text-xs text-slate-300" x-text="result?.message"></p>
+          
+          <!-- Mermaid 時序流程圖容器 -->
+          <div class="mt-3 p-2 bg-slate-950 rounded border border-slate-800 text-center">
+            <div class="text-[10px] text-slate-400 mb-1">截點倒推動態邏輯圖 (Mermaid.js)</div>
+            <div id="mermaidDiagram" class="text-xs"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 📄 官方 Excel 結算表 & 採購簽辦稿樣 1 秒導出 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-1">
+            📄 臺中市 114_04 版經費收支結算表 Excel 導出
+          </h2>
+          <p class="text-xs text-slate-400">100% 讀取官方 .xlsx 範本，自動公式計算與樣式保留</p>
+        </div>
+
+        <div class="space-y-3 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
+          <div class="text-xs text-slate-300">帶入測試數據：本局核定 $296,010，實支總額 $284,624，結餘 $11,386</div>
+          <button @click="downloadExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+            📊 下載《豐洲國小_經費收支結算表.xlsx》
+          </button>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <div>
+          <h2 class="text-base font-semibold text-white flex items-center gap-2 mb-1">
+            📝 2026/07/01 採購要點免公開閱覽簽辦稿樣生成
+          </h2>
+          <p class="text-xs text-slate-400">依《實施要點》第二點第3款重複性採購規定生成</p>
+        </div>
+
+        <div class="space-y-3 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
+          <button @click="generateDraft()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+            📄 生成免辦公開閱覽簽辦稿樣與協議書
+          </button>
+        </div>
+
+        <div x-show="draftContent" x-transition class="p-4 bg-slate-950 border border-slate-800 rounded-xl max-h-48 overflow-y-auto">
+          <pre class="text-xs text-slate-300 whitespace-pre-wrap font-mono" x-text="draftContent"></pre>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    function appData() {
+      return {
+        cancellationCount: 12,
+        loading: false,
+        form: {
+          target_name: '林小明 (三年二班)',
+          target_type: 'student',
+          cancel_date: '2026-10-16',
+          reason: '個人病假'
+        },
+        result: null,
+        draftContent: '',
+
+        async submitCancellation() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/v1/cancellation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.form)
+            });
+            const data = await res.json();
+            this.result = data;
+            this.cancellationCount++;
+
+            // 動態渲染 Mermaid 流程圖
+            this.renderMermaid(data.status === 'approved');
+          } catch (e) {
+            alert('請求失敗: ' + e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        renderMermaid(isApproved) {
+          const statusText = isApproved ? 'Approved [🟢 截點內通過/允許退餐]' : 'NoRefund [🔴 逾時請假/不退費]';
+          const graphDef = `
+            flowchart LR
+              A[請假申請] --> B[倒推 3 工作天 12:00 PM]
+              B --> C{提交時間 <= 截點?}
+              C --> ${isApproved ? 'D[🟢 通過退餐]' : 'E[🔴 逾時不退費]'}
+          `;
+          const container = document.getElementById('mermaidDiagram');
+          container.innerHTML = `<pre class="mermaid">${graphDef}</pre>`;
+          mermaid.contentLoaded();
+        },
+
+        async downloadExcel() {
+          const res = await fetch('/api/v1/settlement/export-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              school_name: "臺中市神岡區豐洲國民小學",
+              project_name: "114學年度第1學期免費營養午餐補助",
+              business_plan_amount: 296010,
+              business_grant_amount: 296010,
+              business_spent_amount: 284624,
+              note: "5元加碼剩餘款:9610\n健康飲食材料費剩餘款:1584"
+            })
+          });
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = '豐洲國小_經費收支結算表.xlsx';
+          a.click();
+        },
+
+        async generateDraft() {
+          const res = await fetch('/api/v1/procurement/draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              case_number: "LUNCH-115-01",
+              case_name: "115學年度學生午餐採購案",
+              budget_amount: 12000000,
+              school_name: "臺中市神岡區豐洲國民小學",
+              vendor_name: "台中小當家團膳股份有限公司"
+            })
+          });
+          const data = await res.json();
+          this.draftContent = data.official_document_draft;
+        },
+
+        initCharts() {
+          // 1. 初始化 ECharts 70% 主副食儀表圖
+          const gaugeChart = echarts.init(document.getElementById('ratioGaugeChart'));
+          gaugeChart.setOption({
+            series: [{
+              type: 'gauge',
+              startAngle: 180,
+              endAngle: 0,
+              min: 0,
+              max: 100,
+              pointer: { show: true },
+              progress: { show: true, width: 12 },
+              axisLine: { lineStyle: { width: 12 } },
+              axisTick: { show: false },
+              splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+              axisLabel: { distance: 12, color: '#999', fontSize: 10 },
+              detail: { valueAnimation: true, formatter: '{value}%', color: '#10B981', fontSize: 18 },
+              data: [{ value: 73.5, name: '主副食佔比' }]
+            }]
+          });
+
+          // 2. 初始化 ECharts 115 補助款長條圖
+          const barChart = echarts.init(document.getElementById('subsidyBarChart'));
+          barChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: { textStyle: { color: '#ccc' } },
+            xAxis: { type: 'category', data: ['9月', '10月', '11月', '12月', '1月'], axisLabel: { color: '#ccc' } },
+            yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
+            series: [
+              { name: '本局核定金額 (A)', type: 'bar', data: [60000, 60000, 60000, 60000, 56010], itemStyle: { color: '#38BDF8' } },
+              { name: '實支總額 (D)', type: 'bar', data: [58000, 57500, 59000, 58200, 51924], itemStyle: { color: '#10B981' } }
+            ]
+          });
+        }
+      }
+    }
+  </script>
+</body>
+</html>
