@@ -484,11 +484,10 @@
           await this.fetchAuditLogs();
           this.renderMermaid();
 
-          // 🌟 在 DOM 完全確定可見後渲染 ECharts
           this.$nextTick(() => {
             setTimeout(() => {
               this.renderAllCharts();
-            }, 100);
+            }, 120);
           });
 
           this.$watch('activeTab', (tab) => {
@@ -496,7 +495,7 @@
               this.$nextTick(() => {
                 setTimeout(() => {
                   this.renderAllCharts();
-                }, 100);
+                }, 120);
               });
             }
           });
@@ -718,41 +717,6 @@
               container.innerHTML = `<pre class="mermaid">${graphDef}</pre>`;
               mermaid.contentLoaded();
             }
-          });
-                  min: 0,
-                  max: 70000,
-                  axisLabel: { color: '#ccc', formatter: '${value}' },
-                  splitLine: { lineStyle: { color: '#334155', type: 'dashed' } }
-                },
-                series: [
-                  {
-                    name: '本局核定金額 (A)',
-                    type: 'bar',
-                    barGap: '20%',
-                    data: [60000, 60000, 60000, 60000, 56010],
-                    itemStyle: { color: '#38BDF8', borderRadius: [6, 6, 0, 0] },
-                    label: { show: true, position: 'top', color: '#38BDF8', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
-                  },
-                  {
-                    name: '實支總額 (D)',
-                    type: 'bar',
-                    data: [58000, 57500, 59000, 58200, 51924],
-                    itemStyle: { color: '#10B981', borderRadius: [6, 6, 0, 0] },
-                    label: { show: true, position: 'top', color: '#10B981', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
-                  }
-                ]
-              });
-              
-              // 強制執行一次 Resize 填滿 100% 寬度
-              setTimeout(() => {
-                this.barChart?.resize();
-              }, 150);
-            }
-
-            window.addEventListener('resize', () => {
-              this.gaugeChart?.resize();
-              this.barChart?.resize();
-            });
           });
         }
       }
