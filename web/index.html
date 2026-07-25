@@ -99,9 +99,12 @@
           <div id="ratioGaugeChart" class="h-64 w-full"></div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2">
-          <h2 class="text-sm font-semibold text-white mb-1">📊 115 免費午餐 60 元補助月度支用趨勢</h2>
-          <div id="subsidyBarChart" class="h-64 w-full"></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2 space-y-2">
+          <div>
+            <h2 class="text-sm font-semibold text-white">📊 115 免費午餐 60 元補助月度支用趨勢</h2>
+            <p class="text-xs text-slate-400">計畫核定金額 (A) 與實際支出金額 (D) 比較</p>
+          </div>
+          <div id="subsidyBarChart" class="h-96 w-full pt-2"></div>
         </div>
       </div>
     </div>
@@ -658,14 +661,28 @@
               if (this.barChart) this.barChart.dispose();
               this.barChart = echarts.init(barEl);
               this.barChart.setOption({
-                tooltip: { trigger: 'axis' },
-                legend: { textStyle: { color: '#ccc' } },
-                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-                xAxis: { type: 'category', data: ['9月', '10月', '11月', '12月', '1月'], axisLabel: { color: '#ccc' } },
-                yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { textStyle: { color: '#ccc' }, top: 0 },
+                grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+                xAxis: { type: 'category', data: ['9月', '10月', '11月', '12月', '1月'], axisLabel: { color: '#ccc', fontSize: 11 } },
+                yAxis: { type: 'value', axisLabel: { color: '#ccc', formatter: '${value}' }, splitLine: { lineStyle: { color: '#334155' } } },
                 series: [
-                  { name: '本局核定金額 (A)', type: 'bar', data: [60000, 60000, 60000, 60000, 56010], itemStyle: { color: '#38BDF8' } },
-                  { name: '實支總額 (D)', type: 'bar', data: [58000, 57500, 59000, 58200, 51924], itemStyle: { color: '#10B981' } }
+                  {
+                    name: '本局核定金額 (A)',
+                    type: 'bar',
+                    barWidth: '24%',
+                    data: [60000, 60000, 60000, 60000, 56010],
+                    itemStyle: { color: '#38BDF8', borderRadius: [6, 6, 0, 0] },
+                    label: { show: true, position: 'top', color: '#38BDF8', fontSize: 10, formatter: '${c}' }
+                  },
+                  {
+                    name: '實支總額 (D)',
+                    type: 'bar',
+                    barWidth: '24%',
+                    data: [58000, 57500, 59000, 58200, 51924],
+                    itemStyle: { color: '#10B981', borderRadius: [6, 6, 0, 0] },
+                    label: { show: true, position: 'top', color: '#10B981', fontSize: 10, formatter: '${c}' }
+                  }
                 ]
               });
             }
