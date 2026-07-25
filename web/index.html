@@ -156,14 +156,11 @@
           ⏱️ 審核結果與截點倒推流程 (Mermaid.js)
         </h2>
 
-        <template x-if="!result">
-          <div class="text-center py-12 text-slate-500 text-xs">
-            👈 請在左側輸入請假內容並點擊送出，系統將為您呈現動態審核流程
-          </div>
-        </template>
+        <div x-show="!result" class="text-center py-12 text-slate-500 text-xs">
+          👈 請在左側輸入請假內容並點擊送出，系統將為您呈現動態審核流程
+        </div>
 
-        <template x-if="result">
-          <div class="space-y-4">
+        <div x-show="result" x-transition class="space-y-4">
             <div class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl border border-slate-700">
               <span class="text-xs font-bold text-slate-300">審核結果狀態</span>
               <span class="px-2.5 py-1 rounded text-xs font-bold" :class="result?.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'" x-text="result?.status === 'approved' ? 'APPROVED (符合截點)' : 'NO_REFUND (逾時請假)'"></span>
@@ -175,7 +172,6 @@
               <div id="mermaidDiagram" class="text-xs"></div>
             </div>
           </div>
-        </template>
       </div>
     </div>
 
@@ -309,15 +305,19 @@
         },
 
         renderMermaid(isApproved) {
-          const graphDef = `
-            flowchart LR
-              A[請假申請] --> B[倒推 3 工作天 12:00 PM]
-              B --> C{提交時間 <= 截點?}
-              C --> ${isApproved ? 'D[🟢 通過退餐]' : 'E[🔴 逾時不退費]'}
-          `;
-          const container = document.getElementById('mermaidDiagram');
-          container.innerHTML = `<pre class="mermaid">${graphDef}</pre>`;
-          mermaid.contentLoaded();
+          this.$nextTick(() => {
+            const graphDef = `
+              flowchart LR
+                A[請假申請] --> B[倒推 3 工作天 12:00 PM]
+                B --> C{提交時間 <= 截點?}
+                C --> ${isApproved ? 'D[🟢 通過退餐]' : 'E[🔴 逾時不退費]'}
+            `;
+            const container = document.getElementById('mermaidDiagram');
+            if (container) {
+              container.innerHTML = `<pre class="mermaid">${graphDef}</pre>`;
+              mermaid.contentLoaded();
+            }
+          });
         },
 
         async downloadExcel() {
