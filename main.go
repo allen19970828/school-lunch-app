@@ -20,30 +20,44 @@ var webFS embed.FS
 
 // --- GORM 資料庫模型 ---
 
-// MealComplaint 膳食滿意度與意見反應模型
+// MealCancellation 請假停餐紀錄模型
+type MealCancellation struct {
+	ID           uint      `gorm:"primaryKey" json:"id"`
+	TargetID     string    `json:"target_id"`
+	TargetType   string    `json:"target_type"` // student / staff
+	TargetName   string    `json:"target_name"` // 如: 林小明 (三年二班)
+	TargetDetail string    `json:"target_detail"`
+	CancelDate   string    `json:"cancel_date"` // YYYY-MM-DD
+	Reason       string    `json:"reason"`
+	Status       string    `json:"status"` // approved / no_refund
+	RefundAmount float64   `json:"refund_amount"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// MealComplaint 膳食滿意度模型
 type MealComplaint struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	Reporter  string    `json:"reporter"` // 填寫人 (如：陳老師 三年二班)
-	Rating    int       `json:"rating"`   // 1-5 顆星
-	DishName  string    `json:"dish_name"`// 菜色名稱 (如：高麗菜)
-	Content   string    `json:"content"`  // 意見內容 (如：高麗菜太鹹)
+	Reporter  string    `json:"reporter"`
+	Rating    int       `json:"rating"`
+	DishName  string    `json:"dish_name"`
+	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Student 學生名冊模型
+// Student 學生模型
 type Student struct {
 	ID        uint   `gorm:"primaryKey" json:"id"`
-	ClassCode string `json:"class_code"` // 班級 (如：302)
-	SeatNo    int    `json:"seat_no"`    // 座號
-	Name      string `json:"name"`       // 姓名
+	ClassCode string `json:"class_code"`
+	SeatNo    int    `json:"seat_no"`
+	Name      string `json:"name"`
 }
 
-// Staff 教職員名冊模型
+// Staff 教職員模型
 type Staff struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
-	Name     string `json:"name"`      // 姓名
-	Role     string `json:"role"`      // 職務身分 (行政/導師/專任)
-	MealMode string `json:"meal_mode"` // monthly / daily
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	MealMode string `json:"meal_mode"`
 }
 
 // OfficialSettlementReport 經費收支結算表導出參數
@@ -57,22 +71,19 @@ type OfficialSettlementReport struct {
 }
 
 func main() {
-	log.Println("🚀 正在啟動 school-lunch-app (連線 SQLite 資料庫持久層)...")
+	log.Println("🚀 正在啟動 school-lunch-app (包含每月停餐總表矩陣功能)...")
 
-	// 1. 連線 GORM SQLite 本地資料庫 (檔案：school_lunch_demo.db)
 	db, err := gorm.Open(sqlite.Open("school_lunch_demo.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("❌ 無法連線至 SQLite 資料庫: %v", err)
 	}
 
-	// 自動建立 Schema (AutoMigrate)
-	db.AutoMigrate(&MealComplaint{}, &Student{}, &Staff{})
-	log.Println("✅ 成功自動建表 (MealComplaint, Student, Staff) 至 SQLite！")
+	db.AutoMigrate(&MealCancellation{}, &MealComplaint{}, &Student{}, &Staff{})
+	log.Println("✅ 成功自動建表 (MealCancellation, MealComplaint, Student, Staff) 至 SQLite！")
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// 2. CORS 跨域設定
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
@@ -84,7 +95,6 @@ func main() {
 		c.Next()
 	})
 
-	// 3. 靜態網頁託管 (Go embed 一體化部署)
 	subFS, err := fs.Sub(webFS, "web")
 	if err != nil {
 		log.Fatalf("無法載入靜態網頁: %v", err)
@@ -95,17 +105,11 @@ func main() {
 		c.Redirect(http.StatusMovedPermanently, "/ui/")
 	})
 
-	// 4. API 端點路由
 	api := r.Group("/api/v1")
 	{
-		// 提交停餐請假
+		// 提交請假停餐 (自動寫入 SQLite 供每月總表統計)
 		api.POST("/cancellation", func(c *gin.Context) {
-			var req struct {
-				TargetName string `json:"target_name"`
-				TargetType string `json:"target_type"`
-				CancelDate string `json:"cancel_date"`
-				Reason     string `json:"reason"`
-			}
+			var req MealCancellation
 			if err := c.ShouldBindJSON(&req); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "無效的請求參數"})
 				return
@@ -118,17 +122,36 @@ func main() {
 			deadline := parseDate.AddDate(0, 0, -3)
 			deadline = time.Date(deadline.Year(), deadline.Month(), deadline.Day(), 12, 0, 0, 0, time.Local)
 
+			req.Status = "approved"
+			req.RefundAmount = 60.0
+			req.CreatedAt = time.Now()
+			db.Create(&req)
+
 			c.JSON(http.StatusOK, gin.H{
 				"status":        "approved",
 				"target_name":   req.TargetName,
 				"cancel_date":   req.CancelDate,
 				"deadline":      deadline.Format("2006-01-02 15:04:00"),
 				"refund_amount": 60.0,
-				"message":       fmt.Sprintf("請假成功！前 3 工作天 12:00 PM 截點為 %s。已完成備餐人數扣銷與退款登錄。", deadline.Format("2006-01-02 15:04:00")),
+				"message":       fmt.Sprintf("請假成功！前 3 工作天 12:00 PM 截點為 %s。已存入 SQLite 並更新每月停餐總表。", deadline.Format("2006-01-02 15:04:00")),
 			})
 		})
 
-		// ⭐ 膳食滿意度與意見反應 API (新增寫入 SQLite)
+		// 📅 每月停餐總表統計 API (月度矩陣彙整)
+		api.GET("/cancellation/monthly-matrix", func(c *gin.Context) {
+			yearMonth := c.DefaultQuery("year_month", "2026-10")
+
+			var list []MealCancellation
+			db.Where("cancel_date LIKE ?", yearMonth+"%").Find(&list)
+
+			c.JSON(http.StatusOK, gin.H{
+				"year_month":  yearMonth,
+				"total_count": len(list),
+				"records":     list,
+			})
+		})
+
+		// 膳食滿意度 API
 		api.POST("/complaint", func(c *gin.Context) {
 			var item MealComplaint
 			if err := c.ShouldBindJSON(&item); err != nil {
@@ -145,7 +168,6 @@ func main() {
 			})
 		})
 
-		// 查詢膳食意見彙整列表 API (從 SQLite 讀取)
 		api.GET("/complaint/list", func(c *gin.Context) {
 			var complaints []MealComplaint
 			db.Order("id desc").Find(&complaints)
@@ -155,14 +177,13 @@ func main() {
 			})
 		})
 
-		// 📥 師生名冊 Excel 批次匯入 API (解析 `.xlsx` 並寫入 SQLite)
+		// 師生名冊 Excel 匯入
 		api.POST("/import/roster", func(c *gin.Context) {
 			file, err := c.FormFile("file")
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "請上傳 Excel 檔案 (.xlsx)"})
 				return
 			}
-
 			src, err := file.Open()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "無法開啟上傳檔案"})
@@ -172,7 +193,7 @@ func main() {
 
 			excel, err := excelize.OpenReader(src)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "無效的 Excel 試算表格式"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": "無效的 Excel 格式"})
 				return
 			}
 			defer excel.Close()
@@ -181,9 +202,8 @@ func main() {
 			importedCount := 0
 			for idx, row := range rows {
 				if idx == 0 || len(row) < 3 {
-					continue // 跳過表頭
+					continue
 				}
-				// 假設結構: 班級, 座號/職務, 姓名
 				classCode := row[0]
 				seatOrRole := row[1]
 				name := row[2]
@@ -203,19 +223,7 @@ func main() {
 			})
 		})
 
-		// 查詢全校師生名冊統計 API
-		api.GET("/roster/summary", func(c *gin.Context) {
-			var studentCount, staffCount int64
-			db.Model(&Student{}).Count(&studentCount)
-			db.Model(&Staff{}).Count(&staffCount)
-
-			c.JSON(http.StatusOK, gin.H{
-				"student_count": studentCount,
-				"staff_count":   staffCount,
-			})
-		})
-
-		// 115 補助試算 API
+		// 115 補助試算
 		api.POST("/subsidy/calc", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"education_level":      "elementary",
@@ -256,7 +264,7 @@ func main() {
 			})
 		})
 
-		// 114_04 版經費收支結算表 Excel 一鍵導出 API
+		// 114_04 版經費收支結算表 Excel 導出
 		api.POST("/settlement/export-excel", func(c *gin.Context) {
 			var input OfficialSettlementReport
 			if err := c.ShouldBindJSON(&input); err != nil {

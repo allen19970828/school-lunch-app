@@ -161,6 +161,74 @@
           </div>
         </div>
       </div>
+
+      <!-- 📅 每月全校停餐總表 (Monthly Cancellation Summary Matrix Table) - 學校午餐執秘最愛 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 lg:col-span-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              📅 每月全校停餐總表 (Monthly Cancellation Summary Matrix)
+            </h2>
+            <p class="text-xs text-slate-400">彙整全校各班級學生與教職員該月份每日停餐人次，自動算算月結扣抵</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="month" value="2026-10" class="bg-slate-800 border border-slate-700 text-xs text-white px-3 py-1 rounded-lg focus:outline-none">
+            <button @click="downloadExcel()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3 py-1.5 rounded-lg transition shadow">
+              📊 導出月停餐總表 .xlsx
+            </button>
+          </div>
+        </div>
+
+        <!-- 每月請假停餐交叉矩陣表 -->
+        <div class="overflow-x-auto border border-slate-800 rounded-xl">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-800/80 text-slate-400 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="px-3 py-2.5">班級 / 單位</th>
+                <th class="px-3 py-2.5">負責導師</th>
+                <th class="px-2 py-2.5 text-center">10/14 (三)</th>
+                <th class="px-2 py-2.5 text-center">10/15 (四)</th>
+                <th class="px-2 py-2.5 text-center">10/16 (五)</th>
+                <th class="px-2 py-2.5 text-center">10/19 (一)</th>
+                <th class="px-3 py-2.5 text-center">月度停餐累計</th>
+                <th class="px-3 py-2.5 text-right">預估折抵金額</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="px-3 py-3 font-bold text-white">三年一班</td>
+                <td class="px-3 py-3 text-slate-300">王老師</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-2 py-3 text-center text-slate-500">0</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">2 人</td>
+                <td class="px-2 py-3 text-center text-slate-500">0</td>
+                <td class="px-3 py-3 text-center font-bold text-white">3 人次</td>
+                <td class="px-3 py-3 text-right font-bold text-emerald-400">學生全額補助扣除</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="px-3 py-3 font-bold text-white">三年二班</td>
+                <td class="px-3 py-3 text-slate-300">陳老師</td>
+                <td class="px-2 py-3 text-center text-slate-500">0</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-3 py-3 text-center font-bold text-white">3 人次</td>
+                <td class="px-3 py-3 text-right font-bold text-emerald-400">學生全額補助扣除</td>
+              </tr>
+              <tr class="hover:bg-slate-800/40 transition bg-slate-800/20">
+                <td class="px-3 py-3 font-bold text-sky-400">教職員自費群</td>
+                <td class="px-3 py-3 text-slate-300">張主任 等</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">2 人</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-2 py-3 text-center text-slate-500">0</td>
+                <td class="px-2 py-3 text-center text-amber-400 font-bold">1 人</td>
+                <td class="px-3 py-3 text-center font-bold text-amber-400">4 天次</td>
+                <td class="px-3 py-3 text-right font-bold text-emerald-400">-$240 元 (次月帳單扣抵)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- 👨‍🏫 Tab 3: 教職員與月結 (Staff & LunchSettlements) -->
