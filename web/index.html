@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>臺中市 115 學校午餐智慧管理系統 (Demo)</title>
+  <title>臺中市 115 學校午餐智慧管理系統 (Filament Style Demo)</title>
   <!-- Tailwind CSS v4 CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Alpine.js 3.x -->
@@ -13,88 +13,82 @@
   <!-- Mermaid.js 10.x -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
-<body class="h-full font-sans antialiased bg-slate-950" x-data="appData()" x-init="initCharts()">
+<body class="h-full font-sans antialiased bg-slate-950 flex flex-col" x-data="appData()" x-init="initCharts()">
 
-  <!-- 頂部導航欄與狀態標籤 -->
+  <!-- 頂部 Header - 汲取 Filament Admin 質感 -->
   <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-2xl">🍱</span>
+        <span class="text-2xl p-2 bg-sky-500/10 border border-sky-500/20 rounded-xl">🍱</span>
         <div>
-          <h1 class="font-bold text-base sm:text-lg text-white">臺中市神岡區豐洲國小 - 學校午餐智慧管理系統</h1>
-          <p class="text-xs text-slate-400">對接 115 免費午餐 60 元補助 x 2026/07/01 採購新制 (Go + SQLite Powered)</p>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg text-white">臺中市神岡區豐洲國小</h1>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">AI午餐助手 v2.0</span>
+          </div>
+          <p class="text-xs text-slate-400">對接 115 免費午餐 60 元補助 x 2026/07/01 採購新制 (Go + SQLite)</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-          SQLite 資料庫已連線 (Persistence Active)
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+          SQLite 資料庫運作中
         </span>
       </div>
     </div>
 
-    <!-- Tab 切換分頁列 (6 大專業頁籤) -->
+    <!-- 汲取 Filament Resource 分組導航列 -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-2 border-t border-slate-800/60 pt-2 pb-[1px] overflow-x-auto">
-      <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'border-sky-500 text-sky-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        📊 數據總覽
+      <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
+        📊 數據與補助大盤 (Semesters & Widgets)
       </button>
-      <button @click="activeTab = 'cancellation'" :class="activeTab === 'cancellation' ? 'border-sky-500 text-sky-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        📱 請假與截點審核
+      <button @click="activeTab = 'cancellation'" :class="activeTab === 'cancellation' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
+        📱 請假停餐單據 (MealCancelRequests)
       </button>
-      <button @click="activeTab = 'staff'" :class="activeTab === 'staff' ? 'border-sky-500 text-sky-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        👨‍🏫 教職員搭餐月結
+      <button @click="activeTab = 'staff'" :class="activeTab === 'staff' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
+        👨‍🏫 教職員與月結 (Staff & LunchSettlements)
       </button>
-      <button @click="activeTab = 'complaint'" :class="activeTab === 'complaint' ? 'border-amber-500 text-amber-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        ⭐ 膳食滿意度與意見
-      </button>
-      <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'border-emerald-500 text-emerald-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        📥 師生名冊 Excel 匯入
-      </button>
-      <button @click="activeTab = 'reports'" :class="activeTab === 'reports' ? 'border-indigo-500 text-indigo-400 bg-slate-800/50' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-3 py-2 border-b-2 font-medium text-xs rounded-t-lg transition whitespace-nowrap">
-        📄 結算 Excel與公文生成
+      <button @click="activeTab = 'complaint'" :class="activeTab === 'complaint' ? 'border-amber-500 text-amber-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
+        ⭐ 膳食評價與公文 (MealComplaints & Official)
       </button>
     </div>
   </header>
 
   <!-- 主要分頁內容區 -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
 
-    <!-- Tab 1: 數據總覽 (Dashboard) -->
+    <!-- 📊 Tab 1: 數據與補助大盤 (Filament Widget 風格) -->
     <div x-show="activeTab === 'dashboard'" x-transition class="space-y-6">
+      
+      <!-- Filament Stat Widgets 風格卡片 -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl relative overflow-hidden">
           <div class="text-slate-400 text-xs font-medium">今日全校總備餐數</div>
-          <div class="mt-2 text-2xl font-extrabold text-white flex items-baseline justify-between">
-            <span>850 <span class="text-xs font-normal text-slate-400">份</span></span>
-            <span class="text-xs text-emerald-400 font-semibold">100% 供應</span>
+          <div class="mt-2 text-3xl font-extrabold text-white">850 <span class="text-xs font-normal text-slate-400">份</span></div>
+          <div class="mt-2 text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+            <span>↑ 100% 供應中</span>
           </div>
         </div>
-        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
-          <div class="text-slate-400 text-xs font-medium">今日請假停餐人數</div>
-          <div class="mt-2 text-2xl font-extrabold text-amber-400 flex items-baseline justify-between">
-            <span x-text="cancellationCount + ' 人'">12 人</span>
-            <span class="text-xs text-amber-400/80 font-normal">已自動扣除</span>
-          </div>
+        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-medium">今日合規停餐人數</div>
+          <div class="mt-2 text-3xl font-extrabold text-amber-400" x-text="cancellationCount + ' 人'">12 人</div>
+          <div class="mt-2 text-[10px] text-amber-400/80">自動扣除廚房份數</div>
         </div>
-        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
-          <div class="text-slate-400 text-xs font-medium">本學期 60元補助額度</div>
-          <div class="mt-2 text-2xl font-extrabold text-sky-400 flex items-baseline justify-between">
-            <span>$296,010</span>
-            <span class="text-xs text-sky-400/80 font-normal">第一學期核定</span>
-          </div>
+        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-medium">115 學期 60元補助額度</div>
+          <div class="mt-2 text-3xl font-extrabold text-sky-400">$296,010</div>
+          <div class="mt-2 text-[10px] text-sky-400/80">第一學期教育局核定</div>
         </div>
-        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl relative overflow-hidden">
           <div class="text-slate-400 text-xs font-medium">主副食支出佔比 (70% 規範)</div>
-          <div class="mt-2 text-2xl font-extrabold text-emerald-400 flex items-baseline justify-between">
-            <span>73.5 %</span>
-            <span class="text-xs text-emerald-400 font-medium">🟢 符合規定</span>
-          </div>
+          <div class="mt-2 text-3xl font-extrabold text-emerald-400">73.5 %</div>
+          <div class="mt-2 text-[10px] text-emerald-400 font-semibold">🟢 高於 70% 法規警示線</div>
         </div>
       </div>
 
+      <!-- 視覺化 ECharts 大盤區 -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h2 class="text-sm font-semibold text-white mb-1">🎯 主副食 70% 支出比例監控</h2>
+          <h2 class="text-sm font-semibold text-white mb-1">🎯 主副食 70% 支出比例監控 (Gauge Chart)</h2>
           <p class="text-xs text-slate-400 mb-4">主副食每年平均支出佔比不得低於 70%</p>
           <div id="ratioGaugeChart" class="h-64 w-full"></div>
         </div>
@@ -107,12 +101,12 @@
       </div>
     </div>
 
-    <!-- Tab 2: 請假與截點審核 -->
+    <!-- 📱 Tab 2: 請假停餐單據 (MealCancelRequests) -->
     <div x-show="activeTab === 'cancellation'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 class="text-sm font-semibold text-white">📱 導師/教職員請假申請 (前 3 工作日 12:00 PM 截點)</h2>
-          <span class="text-xs text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">LINE LIFF 模擬</span>
+          <h2 class="text-sm font-semibold text-white">📱 停餐請假表單 (前 3 工作日 12:00 PM 截點)</h2>
+          <span class="text-xs text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-full border border-sky-500/20 font-medium">LINE LIFF 對接範例</span>
         </div>
 
         <form @submit.prevent="submitCancellation()" class="space-y-4">
@@ -123,7 +117,7 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-slate-300 mb-1">對象身份</label>
+              <label class="block text-xs font-medium text-slate-300 mb-1">對象身份 (Student / Staff)</label>
               <select x-model="form.target_type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
                 <option value="student">學生 (僅扣份數，無須退費)</option>
                 <option value="staff">教職員 (自費折抵次月帳單)</option>
@@ -140,8 +134,8 @@
             <input type="text" x-model="form.reason" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none" placeholder="個人病假 / 公差">
           </div>
 
-          <button type="submit" :disabled="loading" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2">
-            <span x-show="!loading">🚀 送出申請 (發動 Go Core 審核)</span>
+          <button type="submit" :disabled="loading" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg">
+            <span x-show="!loading">🚀 送出單據 (發動 Go Core 審核)</span>
             <span x-show="loading">⌛ 審核中...</span>
           </button>
         </form>
@@ -149,16 +143,17 @@
 
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">⏱️ 審核結果與截點倒推流程 (Mermaid.js)</h2>
+        
         <div x-show="!result" class="text-center py-12 text-slate-500 text-xs">
           👈 請在左側輸入請假內容並點擊送出，系統將為您呈現動態審核流程
         </div>
 
         <div x-show="result" x-transition class="space-y-4">
-          <div class="flex items-center justify-between p-3 bg-slate-800/80 rounded-xl border border-slate-700">
-            <span class="text-xs font-bold text-slate-300">審核結果狀態</span>
+          <div class="flex items-center justify-between p-3.5 bg-slate-800/80 rounded-xl border border-slate-700">
+            <span class="text-xs font-bold text-slate-300">單據狀態 (Status)</span>
             <span class="px-2.5 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED (符合截點)</span>
           </div>
-          <p class="text-xs text-slate-300 p-3 bg-slate-800/40 rounded-lg" x-text="result?.message"></p>
+          <p class="text-xs text-slate-300 p-3.5 bg-slate-800/40 rounded-lg leading-relaxed" x-text="result?.message"></p>
           
           <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-center">
             <div class="text-[10px] text-slate-400 mb-2">截點倒推動態邏輯圖</div>
@@ -168,46 +163,48 @@
       </div>
     </div>
 
-    <!-- Tab 3: 教職員搭餐與月結 -->
-    <div x-show="activeTab === 'staff'" x-transition class="space-y-4">
+    <!-- 👨‍🏫 Tab 3: 教職員與月結 (Staff & LunchSettlements) -->
+    <div x-show="activeTab === 'staff'" x-transition class="space-y-6">
+      
+      <!-- 汲取 Filament Table 風格呈現教職員月結明細 -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
-            <h2 class="text-sm font-semibold text-white">👨‍🏫 教職員搭餐與月結退費明細 (按日/按月包月)</h2>
+            <h2 class="text-sm font-semibold text-white">👨‍🏫 教職員搭餐與月結退費表 (LunchSettlements)</h2>
             <p class="text-xs text-slate-400">教職員自費搭餐，符合前 3 工作天 12:00 PM 截點請假自動折抵次月帳單</p>
           </div>
           <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-lg text-xs">
-            <button @click="staffMode = 'monthly'" :class="staffMode === 'monthly' ? 'bg-sky-600 text-white' : 'text-slate-400'" class="px-3 py-1 rounded font-medium transition">📅 包月模式 (Monthly)</button>
-            <button @click="staffMode = 'daily'" :class="staffMode === 'daily' ? 'bg-sky-600 text-white' : 'text-slate-400'" class="px-3 py-1 rounded font-medium transition">🗓️ 按日扣款 (Daily)</button>
+            <button @click="staffMode = 'monthly'" :class="staffMode === 'monthly' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400'" class="px-3 py-1 rounded transition">📅 包月模式 (Monthly)</button>
+            <button @click="staffMode = 'daily'" :class="staffMode === 'daily' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400'" class="px-3 py-1 rounded transition">🗓️ 按日扣款 (Daily)</button>
           </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto border border-slate-800 rounded-xl">
           <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-800/60 text-slate-400 uppercase text-[10px]">
+            <thead class="bg-slate-800/80 text-slate-400 uppercase text-[10px] font-bold">
               <tr>
                 <th class="px-4 py-3">教職員姓名</th>
-                <th class="px-4 py-3">職務身分</th>
-                <th class="px-4 py-3">搭餐模式</th>
+                <th class="px-4 py-3">職務身分 (StaffRole)</th>
+                <th class="px-4 py-3">搭餐模式 (StaffMealMode)</th>
                 <th class="px-4 py-3">本月應收基額</th>
                 <th class="px-4 py-3">合規請假次數</th>
                 <th class="px-4 py-3">次月退費折抵</th>
                 <th class="px-4 py-3">本月實付金額</th>
-                <th class="px-4 py-3 text-right">狀態</th>
+                <th class="px-4 py-3 text-right">核算狀態</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
               <template x-for="staff in staffList" :key="staff.name">
-                <tr class="hover:bg-slate-800/30 transition">
-                  <td class="px-4 py-3.5 font-medium text-white" x-text="staff.name"></td>
-                  <td class="px-4 py-3.5"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700" x-text="staff.role"></span></td>
-                  <td class="px-4 py-3.5 text-sky-400 font-medium" x-text="staffMode === 'monthly' ? '按月包月' : '按日扣款'"></td>
-                  <td class="px-4 py-3.5" x-text="'$' + (staffMode === 'monthly' ? 1320 : staff.days * 60)"></td>
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="px-4 py-3.5 font-bold text-white" x-text="staff.name"></td>
+                  <td class="px-4 py-3.5"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-medium" x-text="staff.role"></span></td>
+                  <td class="px-4 py-3.5 text-sky-400 font-semibold" x-text="staffMode === 'monthly' ? '按月包月' : '按日扣款'"></td>
+                  <td class="px-4 py-3.5 font-mono" x-text="'$' + (staffMode === 'monthly' ? 1320 : staff.days * 60)"></td>
                   <td class="px-4 py-3.5 font-bold text-amber-400" x-text="staff.cancelDays + ' 天'"></td>
                   <td class="px-4 py-3.5 font-bold text-emerald-400" x-text="'-$' + (staff.cancelDays * 60)"></td>
-                  <td class="px-4 py-3.5 font-extrabold text-white" x-text="'$' + ((staffMode === 'monthly' ? 1320 : staff.days * 60) - (staff.cancelDays * 60))"></td>
+                  <td class="px-4 py-3.5 font-extrabold text-white font-mono" x-text="'$' + ((staffMode === 'monthly' ? 1320 : staff.days * 60) - (staff.cancelDays * 60))"></td>
                   <td class="px-4 py-3.5 text-right">
-                    <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">已自動核算</span>
+                    <span class="px-2.5 py-1 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">已自動核算</span>
                   </td>
                 </tr>
               </template>
@@ -215,13 +212,36 @@
           </table>
         </div>
       </div>
+
+      <!-- 📥 師生名冊 Excel 批次匯入 (Students & Staff Import) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">
+            📥 全校師生名冊 Excel 批次匯入 (StudentImport / StaffImport)
+          </h2>
+          <p class="text-xs text-slate-400 mt-2">學期初總務處只需上傳全校師生 Excel 名冊，系統自動建立班級與教職員對照</p>
+        </div>
+
+        <div class="p-8 border-2 border-dashed border-slate-700/80 rounded-2xl text-center space-y-4 bg-slate-950/40">
+          <div class="text-4xl">📄</div>
+          <div class="text-xs text-slate-300">拖曳全校師生名冊 `.xlsx` 檔案至此，或點擊選擇檔案</div>
+          <input type="file" @change="uploadRoster($event)" class="hidden" id="rosterFileInput">
+          <button @click="document.getElementById('rosterFileInput').click()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-6 py-2.5 rounded-lg transition shadow-md">
+            📂 上傳名冊 .xlsx (發動 Go + Excelize 解析)
+          </button>
+        </div>
+
+        <div x-show="importStatus" x-transition class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs" x-text="importStatus"></div>
+      </div>
+
     </div>
 
-    <!-- ⭐ Tab 4: 膳食滿意度與意見反應 (移植舊版精華) -->
-    <div x-show="activeTab === 'complaint'" x-transition class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- 左側：提交評價卡片 -->
+    <!-- ⭐ Tab 4: 膳食評價與公文 (MealComplaints & Official Reports) -->
+    <div x-show="activeTab === 'complaint'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- 膳食評價與反應 -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">⭐ 填寫今日膳食評價與意見 (LINE 前端)</h2>
+        <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">⭐ 填寫今日膳食評價與意見 (MealComplaints)</h2>
         <form @submit.prevent="submitComplaint()" class="space-y-4">
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1">您的姓名與身分</label>
@@ -247,86 +267,53 @@
             <textarea x-model="complaintForm.content" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none h-20" placeholder="例如：高麗菜口感太鹹，希望少鹽。"></textarea>
           </div>
 
-          <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-lg text-xs transition">
+          <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 rounded-lg text-xs transition shadow-lg">
             ⭐ 提交評價 (寫入 SQLite 資料庫)
           </button>
         </form>
-      </div>
 
-      <!-- 右側：後台即時彙整統計與意見列表 (即時寫入資料庫) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 lg:col-span-2">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div>
-            <h2 class="text-sm font-semibold text-white">📋 全校膳食意見反饋即時彙整 (SQLite 連線)</h2>
-            <p class="text-xs text-slate-400">即時同步反應給團膳業者與學校廚房調整烹調</p>
-          </div>
-          <button @click="fetchComplaints()" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded hover:bg-slate-700">🔄 重新整理</button>
-        </div>
-
-        <div class="space-y-3">
+        <div class="mt-6 pt-4 border-t border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-slate-300">📋 即時評價歷史反應</div>
           <template x-for="c in complaints" :key="c.id">
-            <div class="p-4 bg-slate-800/50 border border-slate-800 rounded-xl space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-white" x-text="c.reporter"></span>
-                <span class="text-amber-400 text-xs" x-text="'★'.repeat(c.rating) + '☆'.repeat(5 - c.rating)"></span>
+            <div class="p-3 bg-slate-800/40 border border-slate-800 rounded-xl space-y-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-white" x-text="c.reporter"></span>
+                <span class="text-amber-400" x-text="'★'.repeat(c.rating) + '☆'.repeat(5 - c.rating)"></span>
               </div>
-              <div class="text-xs text-sky-400 font-medium" x-text="'菜色：' + c.dish_name"></div>
               <p class="text-xs text-slate-300" x-text="c.content"></p>
             </div>
           </template>
         </div>
       </div>
-    </div>
 
-    <!-- 📥 Tab 5: 師生名冊 Excel 批次匯入 (移植舊版精華) -->
-    <div x-show="activeTab === 'import'" x-transition class="space-y-6">
+      <!-- 報表與公文生成 -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
         <div>
-          <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">
-            📥 全校師生名冊 Excel 批次匯入 (`.xlsx` 解析寫入 SQLite)
-          </h2>
-          <p class="text-xs text-slate-400 mt-2">學期初總務處只需上傳全校師生 Excel 名冊，系統自動建立班級與教職員對照</p>
+          <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">📄 臺中市 114_04 版經費收支結算表 Excel 導出</h2>
+          <p class="text-xs text-slate-400 mt-2">100% 讀取官方 .xlsx 範本，自動公式計算與樣式保留</p>
+          <div class="mt-3 space-y-3 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
+            <div class="text-xs text-slate-300">帶入測試數據：本局核定 $296,010，實支總額 $284,624，結餘 $11,386</div>
+            <button @click="downloadExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg">
+              📊 下載《豐洲國小_經費收支結算表.xlsx》
+            </button>
+          </div>
         </div>
 
-        <div class="p-8 border-2 border-dashed border-slate-700 rounded-2xl text-center space-y-4 bg-slate-950/50">
-          <div class="text-4xl">📄</div>
-          <div class="text-xs text-slate-300">拖曳全校師生名冊 `.xlsx` 檔案至此，或點擊選擇檔案</div>
-          <input type="file" @change="uploadRoster($event)" class="hidden" id="rosterFileInput">
-          <button @click="document.getElementById('rosterFileInput').click()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium px-6 py-2.5 rounded-lg transition">
-            📂 上傳名冊 .xlsx (發動 Go + Excelize 解析)
-          </button>
-        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">📝 2026/07/01 採購要點免公開閱覽簽辦稿樣</h2>
+          <p class="text-xs text-slate-400 mt-2">依《實施要點》第二點第3款重複性採購規定生成</p>
+          <div class="mt-3 space-y-3 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
+            <button @click="generateDraft()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg">
+              📄 生成免辦公開閱覽簽辦稿樣與協議書
+            </button>
+          </div>
 
-        <div x-show="importStatus" x-transition class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs" x-text="importStatus"></div>
-      </div>
-    </div>
-
-    <!-- Tab 6: 報表與公文生成 -->
-    <div x-show="activeTab === 'reports'" x-transition class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">📄 臺中市 114_04 版經費收支結算表 Excel 導出</h2>
-        <p class="text-xs text-slate-400">100% 讀取官方 .xlsx 範本，自動公式計算與樣式保留</p>
-        <div class="space-y-4 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
-          <div class="text-xs text-slate-300">帶入測試數據：本局核定 $296,010，實支總額 $284,624，結餘 $11,386</div>
-          <button @click="downloadExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg">
-            📊 下載《豐洲國小_經費收支結算表.xlsx》
-          </button>
+          <div x-show="draftContent" x-transition class="mt-3 p-4 bg-slate-950 border border-slate-800 rounded-xl max-h-40 overflow-y-auto">
+            <pre class="text-xs text-slate-300 whitespace-pre-wrap font-mono" x-text="draftContent"></pre>
+          </div>
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">📝 2026/07/01 採購要點免公開閱覽簽辦稿樣</h2>
-        <p class="text-xs text-slate-400">依《實施要點》第二點第3款重複性採購規定生成</p>
-        <div class="space-y-3 p-4 bg-slate-800/40 border border-slate-800 rounded-xl">
-          <button @click="generateDraft()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-lg">
-            📄 生成免辦公開閱覽簽辦稿樣與協議書
-          </button>
-        </div>
-
-        <div x-show="draftContent" x-transition class="p-4 bg-slate-950 border border-slate-800 rounded-xl max-h-48 overflow-y-auto">
-          <pre class="text-xs text-slate-300 whitespace-pre-wrap font-mono" x-text="draftContent"></pre>
-        </div>
-      </div>
     </div>
 
   </main>
