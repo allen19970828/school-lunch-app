@@ -41,10 +41,16 @@
         </button>
       </form>
 
-      <div class="pt-4 border-t border-slate-800/80 text-[11px] text-slate-500 space-y-1">
-        <div class="font-semibold text-slate-400">🔑 測試帳號提示：</div>
-        <div>• 超級管理員: <span class="font-mono text-sky-400">admin</span> / <span class="font-mono text-sky-400">admin123</span> (完全 CRUD 權限)</div>
-        <div>• 班導師: <span class="font-mono text-sky-400">teacher</span> / <span class="font-mono text-sky-400">teacher123</span> (一般請假權限)</div>
+      <div class="pt-4 border-t border-slate-800/80 text-[11px] text-slate-500 space-y-2">
+        <div class="font-semibold text-slate-400">🔑 點擊快速帶入測試帳號：</div>
+        <div class="flex items-center gap-2">
+          <button @click="loginForm.username='admin'; loginForm.password='admin123'" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg border border-slate-700 font-mono transition text-[11px]">
+            👑 帶入 admin / admin123
+          </button>
+          <button @click="loginForm.username='teacher'; loginForm.password='teacher123'" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg border border-slate-700 font-mono transition text-[11px]">
+            👩‍🏫 帶入 teacher / teacher123
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -391,7 +397,9 @@
           await this.fetchStudents();
           await this.fetchStaff();
           await this.fetchCancellations();
-          if (this.currentUser.role === 'admin') await this.fetchAuditLogs();
+          if (this.currentUser.role === 'admin') {
+            await this.fetchAuditLogs();
+          }
 
           this.$nextTick(() => {
             setTimeout(() => {
