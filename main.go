@@ -17,9 +17,34 @@ import (
 //go:embed web/*
 var webFS embed.FS
 
-// --- GORM 資料庫模型 (完整 CRUD) ---
+// --- GORM 資料庫模型 (完整移植舊版 Student 與 Staff 屬性) ---
 
-// MealCancellation 請假停餐單據模型 (支援人工審核與工作流)
+// Student 學生模型 (與舊版 AI-lunch-liff 100% 契合)
+type Student struct {
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	ClassroomName string    `json:"classroom_name"` // 如: 三年二班
+	SeatNumber    int       `json:"seat_number"`    // 座號
+	StudentCode   string    `json:"student_code"`   // 學號
+	Name          string    `json:"name"`           // 姓名
+	Identity      string    `json:"identity"`       // general(一般) / low_income(低收) / mid_low_income(中低收) / disabled(身障) / teacher_certified(導師認定)
+	DietaryType   string    `json:"dietary_type"`   // omnivore(葷食) / vegan(全素) / ovo_lacto(蛋奶素)
+	Status        string    `json:"status"`         // active(在學) / transferred(轉出) / graduated(畢業)
+	IsMealUser    bool      `json:"is_meal_user"`   // 是否搭餐
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// Staff 教職員模型
+type Staff struct {
+	ID           uint      `gorm:"primaryKey" json:"id"`
+	Name         string    `json:"name"`
+	Role         string    `json:"role"`          // 行政主任 / 班導師 / 專任教師
+	MealMode     string    `json:"meal_mode"`     // monthly / daily
+	IsSubsidized bool      `json:"is_subsidized"` // 是否享有導師/導護補助
+	SubReason    string    `json:"sub_reason"`    // 導師補助 / 導護補助
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// MealCancellation 請假停餐單據模型
 type MealCancellation struct {
 	ID           uint      `gorm:"primaryKey" json:"id"`
 	TargetID     string    `json:"target_id"`
@@ -34,22 +59,11 @@ type MealCancellation struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// Staff 教職員模型 (支援完整 CRUD)
-type Staff struct {
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	Name         string    `json:"name"`
-	Role         string    `json:"role"`          // 行政主任 / 班導師 / 專任教師
-	MealMode     string    `json:"meal_mode"`     // monthly / daily
-	IsSubsidized bool      `json:"is_subsidized"` // 是否享有導師/導護補助
-	SubReason    string    `json:"sub_reason"`    // 導師補助 / 導護補助
-	CreatedAt    time.Time `json:"created_at"`
-}
-
 // AuditLog 異動稽核日誌模型
 type AuditLog struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	Operator  string    `json:"operator"` // 操作者 (如: 李組長)
-	Action    string    `json:"action"`   // 動作 (如: 修改教職員搭餐模式)
+	Operator  string    `json:"operator"` // 操作者
+	Action    string    `json:"action"`   // 動作
 	Details   string    `json:"details"`  // 詳細內容
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -64,26 +78,27 @@ type MealComplaint struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Student 學生模型
-type Student struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	ClassCode string `json:"class_code"`
-	SeatNo    int    `json:"seat_no"`
-	Name      string `json:"name"`
-}
-
 func main() {
-	log.Println("🚀 正在啟動 school-lunch-app 完整後台管理系統 (Full Admin Engine)...")
+	log.Println("🚀 正在啟動 school-lunch-app 完整後台管理系統 (含學生與教職員 CRUD)...")
 
 	db, err := gorm.Open(sqlite.Open("school_lunch_demo.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("❌ 無法連線至 SQLite 資料庫: %v", err)
 	}
 
-	db.AutoMigrate(&MealCancellation{}, &Staff{}, &AuditLog{}, &MealComplaint{}, &Student{})
-	log.Println("✅ 成功自動建表 (MealCancellation, Staff, AuditLog, MealComplaint, Student) 至 SQLite！")
+	db.AutoMigrate(&Student{}, &Staff{}, &MealCancellation{}, &AuditLog{}, &MealComplaint{})
+	log.Println("✅ 成功自動建表 (Student, Staff, MealCancellation, AuditLog, MealComplaint) 至 SQLite！")
 
-	// 預塞教職員初始測試資料
+	// 預塞學生與教職員初始測試資料 (符合舊專案結構)
+	var studentCount int64
+	db.Model(&Student{}).Count(&studentCount)
+	if studentCount == 0 {
+		db.Create(&Student{ClassroomName: "三年二班", SeatNumber: 1, StudentCode: "113001", Name: "林小明", Identity: "general", DietaryType: "omnivore", Status: "active", IsMealUser: true})
+		db.Create(&Student{ClassroomName: "三年二班", SeatNumber: 2, StudentCode: "113002", Name: "陳美玲", Identity: "low_income", DietaryType: "vegan", Status: "active", IsMealUser: true})
+		db.Create(&Student{ClassroomName: "五年一班", SeatNumber: 12, StudentCode: "111012", Name: "張家豪", Identity: "mid_low_income", DietaryType: "omnivore", Status: "active", IsMealUser: true})
+		db.Create(&Student{ClassroomName: "五年一班", SeatNumber: 15, StudentCode: "111015", Name: "黃怡婷", Identity: "teacher_certified", DietaryType: "ovo_lacto", Status: "active", IsMealUser: true})
+	}
+
 	var staffCount int64
 	db.Model(&Staff{}).Count(&staffCount)
 	if staffCount == 0 {
@@ -120,7 +135,76 @@ func main() {
 
 	api := r.Group("/api/v1")
 	{
-		// --- 1. 教職員 Resource CRUD API ---
+		// --- 1. 學生 Resource CRUD API ---
+		api.GET("/students", func(c *gin.Context) {
+			var students []Student
+			db.Order("classroom_name asc, seat_number asc").Find(&students)
+			c.JSON(http.StatusOK, gin.H{"data": students})
+		})
+
+		api.POST("/students", func(c *gin.Context) {
+			var item Student
+			if err := c.ShouldBindJSON(&item); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			item.Status = "active"
+			item.IsMealUser = true
+			item.CreatedAt = time.Now()
+			db.Create(&item)
+
+			db.Create(&AuditLog{
+				Operator:  "管理員",
+				Action:    "新增學生",
+				Details:   fmt.Sprintf("新增 %s %d號 %s (身分: %s, 飲食: %s)", item.ClassroomName, item.SeatNumber, item.Name, item.Identity, item.DietaryType),
+				CreatedAt: time.Now(),
+			})
+			c.JSON(http.StatusOK, gin.H{"status": "success", "data": item})
+		})
+
+		api.PUT("/students/:id", func(c *gin.Context) {
+			id := c.Param("id")
+			var item Student
+			if err := db.First(&item, id).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "找不到該學生"})
+				return
+			}
+			var input Student
+			if err := c.ShouldBindJSON(&input); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			item.ClassroomName = input.ClassroomName
+			item.SeatNumber = input.SeatNumber
+			item.StudentCode = input.StudentCode
+			item.Name = input.Name
+			item.Identity = input.Identity
+			item.DietaryType = input.DietaryType
+			item.IsMealUser = input.IsMealUser
+			db.Save(&item)
+
+			db.Create(&AuditLog{
+				Operator:  "管理員",
+				Action:    "修改學生",
+				Details:   fmt.Sprintf("更新學生 ID#%s %s 資料 (身分: %s, 飲食: %s)", id, item.Name, item.Identity, item.DietaryType),
+				CreatedAt: time.Now(),
+			})
+			c.JSON(http.StatusOK, gin.H{"status": "success", "data": item})
+		})
+
+		api.DELETE("/students/:id", func(c *gin.Context) {
+			id := c.Param("id")
+			db.Delete(&Student{}, id)
+			db.Create(&AuditLog{
+				Operator:  "管理員",
+				Action:    "刪除學生",
+				Details:   fmt.Sprintf("刪除學生 ID#%s", id),
+				CreatedAt: time.Now(),
+			})
+			c.JSON(http.StatusOK, gin.H{"status": "success"})
+		})
+
+		// --- 2. 教職員 Resource CRUD API ---
 		api.GET("/staff", func(c *gin.Context) {
 			var staffList []Staff
 			db.Order("id asc").Find(&staffList)
@@ -136,7 +220,6 @@ func main() {
 			item.CreatedAt = time.Now()
 			db.Create(&item)
 
-			// 記錄異動日誌
 			db.Create(&AuditLog{
 				Operator:  "管理員",
 				Action:    "新增教職員",
@@ -168,7 +251,7 @@ func main() {
 			db.Create(&AuditLog{
 				Operator:  "管理員",
 				Action:    "修改教職員",
-				Details:   fmt.Sprintf("更新 ID#%s %s 之搭餐設定 (模式: %s, 補助: %v)", id, item.Name, item.MealMode, item.IsSubsidized),
+				Details:   fmt.Sprintf("更新 ID#%s %s 搭餐設定", id, item.Name),
 				CreatedAt: time.Now(),
 			})
 			c.JSON(http.StatusOK, gin.H{"status": "success", "data": item})
@@ -186,7 +269,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"status": "success"})
 		})
 
-		// --- 2. 請假單據 工作流與人工審核 API ---
+		// --- 3. 請假單據 工作流 API ---
 		api.GET("/cancellation/list", func(c *gin.Context) {
 			var list []MealCancellation
 			db.Order("id desc").Find(&list)
@@ -210,7 +293,7 @@ func main() {
 				Details:   fmt.Sprintf("%s 申請 %s 停餐 (原因: %s)", req.TargetName, req.CancelDate, req.Reason),
 				CreatedAt: time.Now(),
 			})
-			c.JSON(http.StatusOK, gin.H{"status": "approved", "message": "單據已自動通過審核並寫入資料庫！", "data": req})
+			c.JSON(http.StatusOK, gin.H{"status": "approved", "message": "單據已寫入 SQLite 資料庫！", "data": req})
 		})
 
 		api.PUT("/cancellation/:id/status", func(c *gin.Context) {
@@ -235,13 +318,13 @@ func main() {
 			db.Create(&AuditLog{
 				Operator:  "午餐執秘 (管理員)",
 				Action:    "人工審核單據",
-				Details:   fmt.Sprintf("單據 ID#%s 審核結果變更為 %s (備註: %s)", id, input.Status, input.ReviewNote),
+				Details:   fmt.Sprintf("單據 ID#%s 變更為 %s (備註: %s)", id, input.Status, input.ReviewNote),
 				CreatedAt: time.Now(),
 			})
 			c.JSON(http.StatusOK, gin.H{"status": "success", "data": req})
 		})
 
-		// --- 3. 異動軌跡稽核日誌 API ---
+		// --- 4. 異動稽核日誌 API ---
 		api.GET("/audit-logs", func(c *gin.Context) {
 			var logs []AuditLog
 			db.Order("id desc").Limit(20).Find(&logs)
@@ -260,11 +343,11 @@ func main() {
 
 			db.Create(&AuditLog{
 				Operator:  item.Reporter,
-				Action:    "提交膳食滿意度評價",
+				Action:    "提交膳食評價",
 				Details:   fmt.Sprintf("%s 對菜色 [%s] 給予 %d 顆星評價", item.Reporter, item.DishName, item.Rating),
 				CreatedAt: time.Now(),
 			})
-			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "已成功寫入 SQLite 資料庫並紀錄日誌！"})
+			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "已寫入 SQLite 資料庫！"})
 		})
 
 		api.GET("/complaint/list", func(c *gin.Context) {
@@ -273,7 +356,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"list": complaints})
 		})
 
-		// 採購與結算導出 API
+		// 採購與結算 API
 		api.POST("/procurement/draft", func(c *gin.Context) {
 			draft := `【公務簽辦稿樣 - 免辦公開閱覽說明】
 案由：臺中市神岡區豐洲國民小學辦理「115學年度學生午餐採購案」採購案，擬依《政府採購招標文件公開閱覽制度實施要點》第二點第3款規定免辦公開閱覽，簽請核示。
@@ -303,7 +386,7 @@ func main() {
 	}
 
 	fmt.Println("\n========================================================")
-	fmt.Println("🎉 學校午餐 Full Admin 管理系統已成功啟動！")
+	fmt.Println("🎉 學校午餐 Full Admin 管理系統 (學生 + 教職員全 CRUD) 已成功啟動！")
 	fmt.Println("🌐 請開啟瀏覽器訪問: http://localhost:8080/")
 	fmt.Println("========================================================\n")
 
