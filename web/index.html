@@ -99,12 +99,12 @@
           <div id="ratioGaugeChart" class="h-64 w-full"></div>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2 space-y-2">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2 space-y-2 min-w-0">
           <div>
             <h2 class="text-sm font-semibold text-white">📊 115 免費午餐 60 元補助月度支用趨勢</h2>
             <p class="text-xs text-slate-400">計畫核定金額 (A) 與實際支出金額 (D) 比較</p>
           </div>
-          <div id="subsidyBarChart" class="h-96 w-full pt-2"></div>
+          <div id="subsidyBarChart" class="h-96 w-full min-w-0"></div>
         </div>
       </div>
     </div>
@@ -659,32 +659,47 @@
             const barEl = document.getElementById('subsidyBarChart');
             if (barEl) {
               if (this.barChart) this.barChart.dispose();
-              this.barChart = echarts.init(barEl);
+              this.barChart = echarts.init(barEl, null, { width: 'auto' });
               this.barChart.setOption({
                 tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                legend: { textStyle: { color: '#ccc' }, top: 0 },
-                grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
-                xAxis: { type: 'category', data: ['9月', '10月', '11月', '12月', '1月'], axisLabel: { color: '#ccc', fontSize: 11 } },
-                yAxis: { type: 'value', axisLabel: { color: '#ccc', formatter: '${value}' }, splitLine: { lineStyle: { color: '#334155' } } },
+                legend: { textStyle: { color: '#ccc' }, top: 0, right: '5%' },
+                grid: { left: '2%', right: '3%', bottom: '5%', top: '16%', containLabel: true },
+                xAxis: {
+                  type: 'category',
+                  data: ['115年9月', '10月', '11月', '12月', '116年1月'],
+                  axisLabel: { color: '#ccc', fontSize: 12 },
+                  axisLine: { lineStyle: { color: '#475569' } }
+                },
+                yAxis: {
+                  type: 'value',
+                  min: 0,
+                  max: 70000,
+                  axisLabel: { color: '#ccc', formatter: '${value}' },
+                  splitLine: { lineStyle: { color: '#334155', type: 'dashed' } }
+                },
                 series: [
                   {
                     name: '本局核定金額 (A)',
                     type: 'bar',
-                    barWidth: '24%',
+                    barGap: '20%',
                     data: [60000, 60000, 60000, 60000, 56010],
                     itemStyle: { color: '#38BDF8', borderRadius: [6, 6, 0, 0] },
-                    label: { show: true, position: 'top', color: '#38BDF8', fontSize: 10, formatter: '${c}' }
+                    label: { show: true, position: 'top', color: '#38BDF8', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
                   },
                   {
                     name: '實支總額 (D)',
                     type: 'bar',
-                    barWidth: '24%',
                     data: [58000, 57500, 59000, 58200, 51924],
                     itemStyle: { color: '#10B981', borderRadius: [6, 6, 0, 0] },
-                    label: { show: true, position: 'top', color: '#10B981', fontSize: 10, formatter: '${c}' }
+                    label: { show: true, position: 'top', color: '#10B981', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
                   }
                 ]
               });
+              
+              // 強制執行一次 Resize 填滿 100% 寬度
+              setTimeout(() => {
+                this.barChart?.resize();
+              }, 150);
             }
 
             window.addEventListener('resize', () => {
