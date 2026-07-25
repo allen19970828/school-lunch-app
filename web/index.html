@@ -44,7 +44,7 @@
 
     <!-- Filament 級別 Resource 導覽列 -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-2 border-t border-slate-800/60 pt-2 pb-[1px] overflow-x-auto">
-      <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
+      <button @click="activeTab = 'dashboard'; $nextTick(() => { gaugeChart?.resize(); barChart?.resize(); })" :class="activeTab === 'dashboard' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
         📊 數據大盤
       </button>
       <button @click="activeTab = 'students_crud'" :class="activeTab === 'students_crud' ? 'border-sky-500 text-sky-400 bg-slate-800/80 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="flex items-center gap-2 px-4 py-2.5 border-b-2 text-xs rounded-t-lg transition whitespace-nowrap">
@@ -625,12 +625,16 @@
           });
         },
 
+        gaugeChart: null,
+        barChart: null,
+
         initCharts() {
           this.$nextTick(() => {
             const gaugeEl = document.getElementById('ratioGaugeChart');
             if (gaugeEl) {
-              const gaugeChart = echarts.init(gaugeEl);
-              gaugeChart.setOption({
+              if (this.gaugeChart) this.gaugeChart.dispose();
+              this.gaugeChart = echarts.init(gaugeEl);
+              this.gaugeChart.setOption({
                 series: [{
                   type: 'gauge',
                   startAngle: 180,
@@ -640,6 +644,9 @@
                   pointer: { show: true },
                   progress: { show: true, width: 12 },
                   axisLine: { lineStyle: { width: 12 } },
+                  axisTick: { show: false },
+                  splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+                  axisLabel: { distance: 12, color: '#999', fontSize: 10 },
                   detail: { valueAnimation: true, formatter: '{value}%', color: '#10B981', fontSize: 18 },
                   data: [{ value: 73.5, name: '主副食佔比' }]
                 }]
@@ -648,10 +655,12 @@
 
             const barEl = document.getElementById('subsidyBarChart');
             if (barEl) {
-              const barChart = echarts.init(barEl);
-              barChart.setOption({
+              if (this.barChart) this.barChart.dispose();
+              this.barChart = echarts.init(barEl);
+              this.barChart.setOption({
                 tooltip: { trigger: 'axis' },
                 legend: { textStyle: { color: '#ccc' } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
                 xAxis: { type: 'category', data: ['9月', '10月', '11月', '12月', '1月'], axisLabel: { color: '#ccc' } },
                 yAxis: { type: 'value', axisLabel: { color: '#ccc' } },
                 series: [
@@ -660,6 +669,11 @@
                 ]
               });
             }
+
+            window.addEventListener('resize', () => {
+              this.gaugeChart?.resize();
+              this.barChart?.resize();
+            });
           });
         }
       }
