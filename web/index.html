@@ -151,6 +151,56 @@
 
       </div>
 
+      <!-- 👨‍🏫 教職員搭餐與月結退費專區 (傳承舊版大好評功能) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 lg:col-span-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+              👨‍🏫 教職員搭餐與月結退費明細 (按日/按月包月)
+            </h2>
+            <p class="text-xs text-slate-400">教職員自費搭餐，符合前 3 工作天 12:00 PM 截點請假自動折抵次月帳單</p>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-lg text-xs">
+            <button @click="staffMode = 'monthly'" :class="staffMode === 'monthly' ? 'bg-sky-600 text-white' : 'text-slate-400'" class="px-3 py-1 rounded font-medium transition">📅 包月模式 (Monthly)</button>
+            <button @click="staffMode = 'daily'" :class="staffMode === 'daily' ? 'bg-sky-600 text-white' : 'text-slate-400'" class="px-3 py-1 rounded font-medium transition">🗓️ 按日扣款 (Daily)</button>
+          </div>
+        </div>
+
+        <!-- 教職員清單與試算表格 -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-800/60 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="px-4 py-2.5">教職員姓名</th>
+                <th class="px-4 py-2.5">職務身分</th>
+                <th class="px-4 py-2.5">搭餐模式</th>
+                <th class="px-4 py-2.5">本月應收基額</th>
+                <th class="px-4 py-2.5">合規請假次數</th>
+                <th class="px-4 py-2.5">次月退費折抵</th>
+                <th class="px-4 py-2.5">本月實付金額</th>
+                <th class="px-4 py-2.5 text-right">狀態</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              <template x-for="staff in staffList" :key="staff.name">
+                <tr class="hover:bg-slate-800/30 transition">
+                  <td class="px-4 py-3 font-medium text-white" x-text="staff.name"></td>
+                  <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700" x-text="staff.role"></span></td>
+                  <td class="px-4 py-3 text-sky-400 font-medium" x-text="staffMode === 'monthly' ? '按月包月' : '按日扣款'"></td>
+                  <td class="px-4 py-3" x-text="'$' + (staffMode === 'monthly' ? 1320 : staff.days * 60)"></td>
+                  <td class="px-4 py-3 font-bold text-amber-400" x-text="staff.cancelDays + ' 天'"></td>
+                  <td class="px-4 py-3 font-bold text-emerald-400" x-text="'-$' + (staff.cancelDays * 60)"></td>
+                  <td class="px-4 py-3 font-extrabold text-white" x-text="'$' + ((staffMode === 'monthly' ? 1320 : staff.days * 60) - (staff.cancelDays * 60))"></td>
+                  <td class="px-4 py-3 text-right">
+                    <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-medium">已自動核算</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- 📄 官方 Excel 結算表 & 採購簽辦稿樣 1 秒導出 -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
         <div>
@@ -197,6 +247,13 @@
       return {
         cancellationCount: 12,
         loading: false,
+        staffMode: 'monthly',
+        staffList: [
+          { name: '張主任 (總務處)', role: '行政主任', days: 22, cancelDays: 2 },
+          { name: '陳老師 (三年二班)', role: '班導師', days: 22, cancelDays: 1 },
+          { name: '李組長 (午餐執秘)', role: '午餐執秘', days: 22, cancelDays: 0 },
+          { name: '王組長 (訓導組)', role: '專任教師', days: 22, cancelDays: 3 }
+        ],
         form: {
           target_name: '林小明 (三年二班)',
           target_type: 'student',
