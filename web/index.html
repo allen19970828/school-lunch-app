@@ -462,7 +462,7 @@
   <script>
     function adminApp() {
       return {
-        activeTab: 'students_crud',
+        activeTab: 'dashboard',
         currentRole: 'admin',
         studentsList: [],
         staffList: [],
@@ -474,14 +474,107 @@
         staffForm: { id: null, name: '', role: '', meal_mode: 'monthly', is_subsidized: false, sub_reason: '' },
         cancellationForm: { target_name: '張主任 (總務處)', target_type: 'staff', cancel_date: '2026-10-16', reason: '公差出差' },
         draftContent: '',
+        gaugeChart: null,
+        barChart: null,
 
         async initAdmin() {
           await this.fetchStudents();
           await this.fetchStaff();
           await this.fetchCancellations();
           await this.fetchAuditLogs();
-          this.initCharts();
           this.renderMermaid();
+
+          // 🌟 在 DOM 完全確定可見後渲染 ECharts
+          this.$nextTick(() => {
+            setTimeout(() => {
+              this.renderAllCharts();
+            }, 100);
+          });
+
+          this.$watch('activeTab', (tab) => {
+            if (tab === 'dashboard') {
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.renderAllCharts();
+                }, 100);
+              });
+            }
+          });
+
+          window.addEventListener('resize', () => {
+            if (this.activeTab === 'dashboard') {
+              this.gaugeChart?.resize();
+              this.barChart?.resize();
+            }
+          });
+        },
+
+        renderAllCharts() {
+          const gaugeEl = document.getElementById('ratioGaugeChart');
+          if (gaugeEl && gaugeEl.clientWidth > 0) {
+            if (this.gaugeChart) this.gaugeChart.dispose();
+            this.gaugeChart = echarts.init(gaugeEl);
+            this.gaugeChart.setOption({
+              series: [{
+                type: 'gauge',
+                startAngle: 180,
+                endAngle: 0,
+                min: 0,
+                max: 100,
+                pointer: { show: true },
+                progress: { show: true, width: 12 },
+                axisLine: { lineStyle: { width: 12 } },
+                axisTick: { show: false },
+                splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
+                axisLabel: { distance: 12, color: '#999', fontSize: 10 },
+                detail: { valueAnimation: true, formatter: '{value}%', color: '#10B981', fontSize: 18 },
+                data: [{ value: 73.5, name: '主副食佔比' }]
+              }]
+            });
+            this.gaugeChart.resize();
+          }
+
+          const barEl = document.getElementById('subsidyBarChart');
+          if (barEl && barEl.clientWidth > 0) {
+            if (this.barChart) this.barChart.dispose();
+            this.barChart = echarts.init(barEl);
+            this.barChart.setOption({
+              tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+              legend: { textStyle: { color: '#ccc' }, top: 0, right: '2%' },
+              grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+              xAxis: {
+                type: 'category',
+                data: ['115年9月', '10月', '11月', '12月', '116年1月'],
+                axisLabel: { color: '#ccc', fontSize: 12 },
+                axisLine: { lineStyle: { color: '#475569' } }
+              },
+              yAxis: {
+                type: 'value',
+                min: 0,
+                max: 70000,
+                axisLabel: { color: '#ccc', formatter: '${value}' },
+                splitLine: { lineStyle: { color: '#334155', type: 'dashed' } }
+              },
+              series: [
+                {
+                  name: '本局核定金額 (A)',
+                  type: 'bar',
+                  barCategoryGap: '40%',
+                  data: [60000, 60000, 60000, 60000, 56010],
+                  itemStyle: { color: '#38BDF8', borderRadius: [6, 6, 0, 0] },
+                  label: { show: true, position: 'top', color: '#38BDF8', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
+                },
+                {
+                  name: '實支總額 (D)',
+                  type: 'bar',
+                  data: [58000, 57500, 59000, 58200, 51924],
+                  itemStyle: { color: '#10B981', borderRadius: [6, 6, 0, 0] },
+                  label: { show: true, position: 'top', color: '#10B981', fontSize: 11, fontWeight: 'bold', formatter: '${c}' }
+                }
+              ]
+            });
+            this.barChart.resize();
+          }
         },
 
         async fetchStudents() {
@@ -626,52 +719,6 @@
               mermaid.contentLoaded();
             }
           });
-        },
-
-        gaugeChart: null,
-        barChart: null,
-
-        initCharts() {
-          this.$nextTick(() => {
-            const gaugeEl = document.getElementById('ratioGaugeChart');
-            if (gaugeEl) {
-              if (this.gaugeChart) this.gaugeChart.dispose();
-              this.gaugeChart = echarts.init(gaugeEl);
-              this.gaugeChart.setOption({
-                series: [{
-                  type: 'gauge',
-                  startAngle: 180,
-                  endAngle: 0,
-                  min: 0,
-                  max: 100,
-                  pointer: { show: true },
-                  progress: { show: true, width: 12 },
-                  axisLine: { lineStyle: { width: 12 } },
-                  axisTick: { show: false },
-                  splitLine: { length: 8, lineStyle: { width: 2, color: '#999' } },
-                  axisLabel: { distance: 12, color: '#999', fontSize: 10 },
-                  detail: { valueAnimation: true, formatter: '{value}%', color: '#10B981', fontSize: 18 },
-                  data: [{ value: 73.5, name: '主副食佔比' }]
-                }]
-              });
-            }
-
-            const barEl = document.getElementById('subsidyBarChart');
-            if (barEl) {
-              if (this.barChart) this.barChart.dispose();
-              this.barChart = echarts.init(barEl, null, { width: 'auto' });
-              this.barChart.setOption({
-                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                legend: { textStyle: { color: '#ccc' }, top: 0, right: '5%' },
-                grid: { left: '2%', right: '3%', bottom: '5%', top: '16%', containLabel: true },
-                xAxis: {
-                  type: 'category',
-                  data: ['115年9月', '10月', '11月', '12月', '116年1月'],
-                  axisLabel: { color: '#ccc', fontSize: 12 },
-                  axisLine: { lineStyle: { color: '#475569' } }
-                },
-                yAxis: {
-                  type: 'value',
                   min: 0,
                   max: 70000,
                   axisLabel: { color: '#ccc', formatter: '${value}' },
