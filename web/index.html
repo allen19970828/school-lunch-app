@@ -65,7 +65,7 @@
           <span class="text-2xl p-2 bg-sky-500/10 border border-sky-500/20 rounded-xl">🍱</span>
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="font-bold text-base sm:text-lg text-white">臺中市神岡區豐洲國小</h1>
+              <h1 class="font-bold text-base sm:text-lg text-white">臺中市示範國民小學</h1>
               <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">JWT 安全認證中</span>
             </div>
             <p class="text-xs text-slate-400">對接 115 免費午餐 60 元補助 x 2026/07/01 採購新制 (Go + JWT Auth)</p>
@@ -287,7 +287,7 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
           <h2 class="text-sm font-semibold text-white border-b border-slate-800 pb-3">📄 114_04 結算表 Excel 導出</h2>
           <button @click="downloadExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-xs transition">
-            📊 下載《豐洲國小_經費收支結算表.xlsx》
+            📊 下載《示範國小_經費收支結算表.xlsx》
           </button>
         </div>
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
@@ -485,7 +485,7 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = '豐洲國小_經費收支結算表.xlsx';
+          a.download = '示範國小_經費收支結算表.xlsx';
           a.click();
         },
 

@@ -376,7 +376,7 @@ func main() {
 		// 公文與結算 API
 		api.POST("/procurement/draft", AuthMiddleware(), func(c *gin.Context) {
 			draft := `【公務簽辦稿樣 - 免辦公開閱覽說明】
-案由：臺中市神岡區豐洲國民小學辦理「115學年度學生午餐採購案」採購案，擬依《政府採購招標文件公開閱覽制度實施要點》第二點第3款規定免辦公開閱覽，簽請核示。`
+案由：臺中市示範國民小學辦理「115學年度學生午餐採購案」採購案，擬依《政府採購招標文件公開閱覽制度實施要點》第二點第3款規定免辦公開閱覽，簽請核示。`
 			c.JSON(http.StatusOK, gin.H{"official_document_draft": draft})
 		})
 
@@ -384,11 +384,11 @@ func main() {
 			f := excelize.NewFile()
 			sheet := "收支結算表(114_04版)"
 			f.SetSheetName("Sheet1", sheet)
-			f.SetCellValue(sheet, "A1", "臺中市神岡區豐洲國民小學\n經費收支結算表")
+			f.SetCellValue(sheet, "A1", "臺中市示範國民小學\n經費收支結算表")
 			f.SetCellValue(sheet, "B6", 296010)
 			f.SetCellValue(sheet, "E6", 284624)
 			buffer, _ := f.WriteToBuffer()
-			c.Header("Content-Disposition", "attachment; filename=\"豐洲國小_經費收支結算表.xlsx\"")
+			c.Header("Content-Disposition", "attachment; filename=\"示範國小_經費收支結算表.xlsx\"")
 			c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 			c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer.Bytes())
 		})
