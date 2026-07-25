@@ -269,7 +269,7 @@
                   <td class="px-4 py-3.5 text-sky-400 font-semibold" x-text="staffMode === 'monthly' ? '按月包月' : '按日扣款'"></td>
                   <td class="px-4 py-3.5 font-mono">
                     <span x-show="!staff.isSubsidized" x-text="'$' + (staffMode === 'monthly' ? 1320 : staff.days * 60)"></span>
-                    <span x-show="staff.isSubsidized" class="text-emerald-400 font-bold">$0 (隨班監導補助)</span>
+                    <span x-show="staff.isSubsidized" class="text-emerald-400 font-bold" x-text="'$0 (' + staff.subReason + ')'"></span>
                   </td>
                   <td class="px-4 py-3.5 font-bold text-amber-400" x-text="staff.cancelDays + ' 天'"></td>
                   <td class="px-4 py-3.5 font-bold text-emerald-400" x-text="staff.isSubsidized ? '$0' : '-$' + (staff.cancelDays * 60)"></td>
@@ -399,9 +399,10 @@
         staffMode: 'monthly',
         staffList: [
           { name: '張主任 (總務處)', role: '行政主任', days: 22, cancelDays: 2, isSubsidized: false },
-          { name: '陳老師 (三年二班)', role: '班導師 (隨班監導)', days: 22, cancelDays: 1, isSubsidized: true },
-          { name: '李組長 (午餐執秘)', role: '午餐幹事 (工作補助)', days: 22, cancelDays: 0, isSubsidized: true },
-          { name: '王組長 (訓導組)', role: '專任教師', days: 22, cancelDays: 3, isSubsidized: false }
+          { name: '陳老師 (三年二班)', role: '班導師 (隨班指導補助)', days: 22, cancelDays: 1, isSubsidized: true, subReason: '導師補助' },
+          { name: '林老師 (五年一班)', role: '輪值導護 (導護餐費補助)', days: 22, cancelDays: 0, isSubsidized: true, subReason: '導護補助' },
+          { name: '李組長 (午餐執秘)', role: '午餐幹事 (工作補助)', days: 22, cancelDays: 0, isSubsidized: true, subReason: '工作補助' },
+          { name: '王組長 (訓導組)', role: '專任教師', days: 22, cancelDays: 3, isSubsidized: false, subReason: '' }
         ],
         complaintForm: {
           reporter: '陳老師 (三年二班)',
