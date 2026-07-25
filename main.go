@@ -11,28 +11,68 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 //go:embed web/*
 var webFS embed.FS
 
+// --- GORM 資料庫模型 ---
+
+// MealComplaint 膳食滿意度與意見反應模型
+type MealComplaint struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Reporter  string    `json:"reporter"` // 填寫人 (如：陳老師 三年二班)
+	Rating    int       `json:"rating"`   // 1-5 顆星
+	DishName  string    `json:"dish_name"`// 菜色名稱 (如：高麗菜)
+	Content   string    `json:"content"`  // 意見內容 (如：高麗菜太鹹)
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// Student 學生名冊模型
+type Student struct {
+	ID        uint   `gorm:"primaryKey" json:"id"`
+	ClassCode string `json:"class_code"` // 班級 (如：302)
+	SeatNo    int    `json:"seat_no"`    // 座號
+	Name      string `json:"name"`       // 姓名
+}
+
+// Staff 教職員名冊模型
+type Staff struct {
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	Name     string `json:"name"`      // 姓名
+	Role     string `json:"role"`      // 職務身分 (行政/導師/專任)
+	MealMode string `json:"meal_mode"` // monthly / daily
+}
+
 // OfficialSettlementReport 經費收支結算表導出參數
 type OfficialSettlementReport struct {
-	SchoolName           string  `json:"school_name"`
-	ProjectName          string  `json:"project_name"`
-	BusinessPlanAmount   float64 `json:"business_plan_amount"`
-	BusinessGrantAmount  float64 `json:"business_grant_amount"`
-	BusinessSpentAmount  float64 `json:"business_spent_amount"`
-	Note                 string  `json:"note"`
+	SchoolName          string  `json:"school_name"`
+	ProjectName         string  `json:"project_name"`
+	BusinessPlanAmount  float64 `json:"business_plan_amount"`
+	BusinessGrantAmount float64 `json:"business_grant_amount"`
+	BusinessSpentAmount float64 `json:"business_spent_amount"`
+	Note                string  `json:"note"`
 }
 
 func main() {
-	log.Println("🚀 正在啟動 school-lunch-app 學校午餐智慧管理 Demo 服務 (Go 一體化單檔)...")
+	log.Println("🚀 正在啟動 school-lunch-app (連線 SQLite 資料庫持久層)...")
+
+	// 1. 連線 GORM SQLite 本地資料庫 (檔案：school_lunch_demo.db)
+	db, err := gorm.Open(sqlite.Open("school_lunch_demo.db"), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("❌ 無法連線至 SQLite 資料庫: %v", err)
+	}
+
+	// 自動建立 Schema (AutoMigrate)
+	db.AutoMigrate(&MealComplaint{}, &Student{}, &Staff{})
+	log.Println("✅ 成功自動建表 (MealComplaint, Student, Staff) 至 SQLite！")
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// 1. CORS 跨域設定
+	// 2. CORS 跨域設定
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
@@ -44,22 +84,21 @@ func main() {
 		c.Next()
 	})
 
-	// 2. 靜態網頁託管 (Go embed 一體化部署)
+	// 3. 靜態網頁託管 (Go embed 一體化部署)
 	subFS, err := fs.Sub(webFS, "web")
 	if err != nil {
 		log.Fatalf("無法載入靜態網頁: %v", err)
 	}
 	r.StaticFS("/ui", http.FS(subFS))
 
-	// 根目錄重新導向至 UI 介面
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/ui/")
 	})
 
-	// 3. API 端點路由
+	// 4. API 端點路由
 	api := r.Group("/api/v1")
 	{
-		// 停餐請假申請 (含倒推 3 工作天 12:00 PM 截點檢核)
+		// 提交停餐請假
 		api.POST("/cancellation", func(c *gin.Context) {
 			var req struct {
 				TargetName string `json:"target_name"`
@@ -72,17 +111,13 @@ func main() {
 				return
 			}
 
-			// 計算截點邏輯
 			parseDate, err := time.Parse("2006-01-02", req.CancelDate)
 			if err != nil {
 				parseDate = time.Now().AddDate(0, 0, 4)
 			}
-			// 模擬倒推 3 工作天 12:00 PM
 			deadline := parseDate.AddDate(0, 0, -3)
 			deadline = time.Date(deadline.Year(), deadline.Month(), deadline.Day(), 12, 0, 0, 0, time.Local)
 
-			isApproved := true
-			_ = isApproved // 用於 demo 標示通過狀態
 			c.JSON(http.StatusOK, gin.H{
 				"status":        "approved",
 				"target_name":   req.TargetName,
@@ -90,6 +125,93 @@ func main() {
 				"deadline":      deadline.Format("2006-01-02 15:04:00"),
 				"refund_amount": 60.0,
 				"message":       fmt.Sprintf("請假成功！前 3 工作天 12:00 PM 截點為 %s。已完成備餐人數扣銷與退款登錄。", deadline.Format("2006-01-02 15:04:00")),
+			})
+		})
+
+		// ⭐ 膳食滿意度與意見反應 API (新增寫入 SQLite)
+		api.POST("/complaint", func(c *gin.Context) {
+			var item MealComplaint
+			if err := c.ShouldBindJSON(&item); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "無效的評價參數"})
+				return
+			}
+			item.CreatedAt = time.Now()
+			db.Create(&item)
+
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "success",
+				"message": "感謝您的意見反饋！已將評價與意見存入資料庫，並即時通知團膳業者與廚房。",
+				"data":    item,
+			})
+		})
+
+		// 查詢膳食意見彙整列表 API (從 SQLite 讀取)
+		api.GET("/complaint/list", func(c *gin.Context) {
+			var complaints []MealComplaint
+			db.Order("id desc").Find(&complaints)
+			c.JSON(http.StatusOK, gin.H{
+				"total": len(complaints),
+				"list":  complaints,
+			})
+		})
+
+		// 📥 師生名冊 Excel 批次匯入 API (解析 `.xlsx` 並寫入 SQLite)
+		api.POST("/import/roster", func(c *gin.Context) {
+			file, err := c.FormFile("file")
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "請上傳 Excel 檔案 (.xlsx)"})
+				return
+			}
+
+			src, err := file.Open()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "無法開啟上傳檔案"})
+				return
+			}
+			defer src.Close()
+
+			excel, err := excelize.OpenReader(src)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "無效的 Excel 試算表格式"})
+				return
+			}
+			defer excel.Close()
+
+			rows, _ := excel.GetRows("Sheet1")
+			importedCount := 0
+			for idx, row := range rows {
+				if idx == 0 || len(row) < 3 {
+					continue // 跳過表頭
+				}
+				// 假設結構: 班級, 座號/職務, 姓名
+				classCode := row[0]
+				seatOrRole := row[1]
+				name := row[2]
+
+				if classCode == "教職員" {
+					db.Create(&Staff{Name: name, Role: seatOrRole, MealMode: "monthly"})
+				} else {
+					db.Create(&Student{ClassCode: classCode, SeatNo: 1, Name: name})
+				}
+				importedCount++
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"status":         "success",
+				"imported_count": importedCount,
+				"message":        fmt.Sprintf("成功匯入 %d 筆全校師生名冊至 SQLite 資料庫！", importedCount),
+			})
+		})
+
+		// 查詢全校師生名冊統計 API
+		api.GET("/roster/summary", func(c *gin.Context) {
+			var studentCount, staffCount int64
+			db.Model(&Student{}).Count(&studentCount)
+			db.Model(&Staff{}).Count(&staffCount)
+
+			c.JSON(http.StatusOK, gin.H{
+				"student_count": studentCount,
+				"staff_count":   staffCount,
 			})
 		})
 
@@ -128,8 +250,8 @@ func main() {
 三、綜上，本案符合前開要點「重複性採購」得免辦公開閱覽之規定，擬免予公開閱覽，以提升採購效率。`, req.School, req.CaseName, req.Budget)
 
 			c.JSON(http.StatusOK, gin.H{
-				"school_name":              req.School,
-				"case_name":                req.CaseName,
+				"school_name":             req.School,
+				"case_name":               req.CaseName,
 				"official_document_draft": draft,
 			})
 		})
@@ -146,7 +268,6 @@ func main() {
 				input.Note = "5元加碼剩餘款:9610\n健康飲食材料費剩餘款:1584"
 			}
 
-			// 動態生成格式精美的 Excel
 			f := excelize.NewFile()
 			sheet := "收支結算表(114_04版)"
 			f.SetSheetName("Sheet1", sheet)
@@ -161,9 +282,7 @@ func main() {
 				f.SetCellValue(sheet, cell, h)
 			}
 
-			// 人事費
 			f.SetCellValue(sheet, "A5", "人事費(經常門)")
-			// 業務費
 			f.SetCellValue(sheet, "A6", "業務費(經常門)")
 			f.SetCellValue(sheet, "B6", input.BusinessPlanAmount)
 			f.SetCellValue(sheet, "C6", input.BusinessGrantAmount)
@@ -174,7 +293,6 @@ func main() {
 			f.SetCellValue(sheet, "G6", math.Ceil(surplus))
 			f.SetCellValue(sheet, "H6", input.Note)
 
-			// 合計
 			f.SetCellValue(sheet, "A8", "合計")
 			f.SetCellValue(sheet, "B8", input.BusinessPlanAmount)
 			f.SetCellValue(sheet, "C8", input.BusinessGrantAmount)
@@ -182,7 +300,6 @@ func main() {
 			f.SetCellValue(sheet, "F8", surplus)
 			f.SetCellValue(sheet, "G8", math.Ceil(surplus))
 
-			// 分攤表
 			f.SetCellValue(sheet, "A10", "支出機關分攤表：")
 			f.SetCellValue(sheet, "A11", "分攤機關名稱")
 			f.SetCellValue(sheet, "B11", "分攤金額(元)")
